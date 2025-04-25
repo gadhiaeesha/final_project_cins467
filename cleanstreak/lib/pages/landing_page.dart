@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth/firebase_auth.dart';
+import 'dashboard_page.dart';
+import 'login_page.dart';
 
 class LandingPage extends StatelessWidget {
   final FirebaseAuthService _auth = FirebaseAuthService();
@@ -13,21 +15,25 @@ class LandingPage extends StatelessWidget {
       stream: _auth.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const LoadingScreen();
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
 
         if (snapshot.hasData) {
-          return DashboardScreen();
+          return DashboardPage();
         }
 
-        return WelcomeScreen(auth: _auth);
+        return LoginPage(auth: _auth);
       },
     );
   }
 }
 
-class LoadingScreen extends StatelessWidget {
-  const LoadingScreen({super.key});
+class LoadingPage extends StatelessWidget {
+  const LoadingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -39,15 +45,15 @@ class LoadingScreen extends StatelessWidget {
   }
 }
 
-class WelcomeScreen extends StatefulWidget {
+class LoginPage extends StatefulWidget {
   final FirebaseAuthService auth;
-  const WelcomeScreen({super.key, required this.auth}); 
+  const LoginPage({super.key, required this.auth}); 
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -247,10 +253,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 }
 
-class DashboardScreen extends StatelessWidget {
+class DashboardPage extends StatelessWidget {
   final FirebaseAuthService _auth = FirebaseAuthService();
 
-  DashboardScreen({super.key});
+  DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
