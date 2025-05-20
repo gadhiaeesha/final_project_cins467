@@ -39,9 +39,9 @@ class ChoreStorage {
         await doc.reference.delete();
       }
 
-      // Add the new list of households
+      // Add the new list of chores using their names as document IDs
       for (final chore in chores) {
-        await choreCollection.add(chore.toJson());
+        await choreCollection.doc(chore.name).set(chore.toJson());
       }
     } catch (e) {
       if (kDebugMode) {
