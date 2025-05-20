@@ -1,1 +1,2 @@
-# final_project_cins467
+# CleanStreak
+## CINS 467 Final Project
