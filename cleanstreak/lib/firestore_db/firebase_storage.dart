@@ -18,12 +18,12 @@ class ChoreStorage {
             .map((doc) => Chore.fromJson(doc.data() as Map<String, dynamic>))
             .toList();
       } else {
-        debugPrint('No documents found in the houses collection.');
+        debugPrint('No documents found in the chores collection.');
         return [];
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error reading house list from Firestore: $e');
+        debugPrint('Error reading chores list from Firestore: $e');
       }
       return [];
     }
@@ -45,7 +45,7 @@ class ChoreStorage {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error writing house list to Firestore: $e');
+        debugPrint('Error writing chores list to Firestore: $e');
       }
     }
   }
@@ -59,7 +59,7 @@ class ChoreStorage {
       debugPrint('All chore data reset.');
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error resetting chore data in Firestore: $e');
+        debugPrint('Error resetting chores data in Firestore: $e');
       }
     }
   }
