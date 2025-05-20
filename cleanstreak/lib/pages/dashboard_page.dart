@@ -2,7 +2,9 @@ import 'package:cleanstreak/widgets/calendar_utils.dart';
 import 'package:cleanstreak/dialogs/add_chore.dart';
 import 'package:cleanstreak/firestore_db/firebase_storage.dart';
 import 'package:cleanstreak/models/chore.dart';
-import 'package:cleanstreak/widgets/chore_container.dart';
+import 'package:cleanstreak/widgets/calendar_widget.dart';
+import 'package:cleanstreak/widgets/chore_display_widgets.dart';
+import 'package:cleanstreak/services/chore_management.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../auth/firebase_auth.dart';
@@ -22,11 +24,11 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Chore> chores = [];
   Chore? selectedChore;
   int _unfinishedChoresCount = 0;
+  late ChoreManagement _choreManagement;
 
   late final ValueNotifier<List<Event>> _selectedEvents;
   CalendarFormat _calendarFormat = CalendarFormat.week;
-  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode
-      .toggledOff; // Can be toggled on/off by longpressing a date
+  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOff;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   DateTime? _rangeStart;
@@ -499,193 +501,14 @@ class _DashboardPageState extends State<DashboardPage> {
   /// Displays Master List of Chores
   /// ************************************************************************************************
   Widget _displayMasterChoresList(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width / 3, // 1/3 of screen width
-      height: MediaQuery.of(context).size.height / 2, // 2/3 of screen height
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.cleaning_services,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Master Chores List',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: chores.length,
-              itemBuilder: (context, index) {
-                final chore = chores[index];
-                return Dismissible(
-                  key: Key(chore.id.toString()),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20.0),
-                    child: const Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                    ),
-                  ),
-                  onDismissed: (direction) {
-                    _deleteChore(chore.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${chore.name} deleted')),
-                    );
-                  },
-                  child: ChoreContainer(
-                    chore: chore,
-                    onSelect: (selectedChore) {
-                      setState(() {
-                        this.selectedChore = selectedChore;
-                      });
-                    },
-                    onDelete: (chore) {
-                      _deleteChore(chore.id);
-                    },
-                    onToggleComplete: (chore, isCompleted) {
-                      _toggleCompletion(chore.id, isCompleted);
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('All Chores: ${chores.length}'),
-                SizedBox(
-                  width: 45, // Adjust button size
-                  height: 45,
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      _showAddChoreDialog();
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      size: 20, // Adjust icon size
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        ],
-      ),
-    );
+    return const SizedBox();
   }
 
   /// ************************************************************************************************
   /// Displays Details of the selected Chore
   /// ************************************************************************************************
   Widget _displayChoreDetails() {
-    if (selectedChore == null) return const SizedBox();
-
-    return Container(
-      width: 300,
-      height: MediaQuery.of(context).size.height / 2,
-      decoration: BoxDecoration(
-        border: Border.all(),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.inversePrimary,
-              border: const Border(bottom: BorderSide(width: 1)),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(7.0),
-                topRight: Radius.circular(7.0),
-              ),
-            ),
-            child: Text(
-              'Chore Details: ${selectedChore!.name}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Description:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  selectedChore!.description,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Completion Status:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                CheckboxListTile(
-                  title: const Text('Completed'),
-                  value: selectedChore!.isCompleted,
-                  onChanged: (bool? value) {
-                    if (value != null && selectedChore != null) {
-                      _toggleCompletion(selectedChore!.id, value);
-                    }
-                  },
-                ),
-                if (selectedChore!.completeBy != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    'Complete By: ${selectedChore!.completeBy!.day}/${selectedChore!.completeBy!.month}/${selectedChore!.completeBy!.year}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ],
-                if (selectedChore!.completionDate != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    'Completed On: ${selectedChore!.completionDate!.day}/${selectedChore!.completionDate!.month}/${selectedChore!.completionDate!.year}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox();
   }
 
   void _showAddChoreDialog() {
@@ -701,91 +524,65 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-
   void _addChore(String name, String description, DateTime? completeBy) {
-    Chore newChore = Chore(
-      id: chores.length, 
-      name: name, 
-      description: description, 
-      isCompleted: false,
-      completeBy: completeBy,
-      completionDate: null,
-    );
-    chores.add(newChore);
+    Chore newChore = _choreManagement.addChore(name, description, completeBy, chores);
     setState(() {
-      _unfinishedChoresCount = chores.where((chore) => !chore.isCompleted).length;
+      chores.add(newChore);
+      _unfinishedChoresCount = _choreManagement.getUnfinishedChoresCount(chores);
       _saveChores();
     });
   }
 
   void _deleteChore(int id) {
-    for (int i = 0; i < chores.length; i++) {
-      if (chores[i].id == id) {
-        if (selectedChore != null && selectedChore!.id == id) {
-          selectedChore = null; // Clear the details panel
-        }
-        chores.removeAt(i);
-        _unfinishedChoresCount = chores.where((chore) => !chore.isCompleted).length;
-        break;
-      }
-    }
     setState(() {
+      _choreManagement.deleteChore(id, chores);
+      if (selectedChore != null && selectedChore!.id == id) {
+        selectedChore = null;
+      }
+      _unfinishedChoresCount = _choreManagement.getUnfinishedChoresCount(chores);
       _saveChores();
     });
   }
-
 
   void _toggleCompletion(int id, bool isCompleted) {
     setState(() {
-      for (var chore in chores) {
-        if (chore.id == id) {
-          chore.isCompleted = isCompleted;
-          // Set completion date when marking as completed
-          if (isCompleted) {
-            chore.completionDate = DateTime.now();
-          } else {
-            chore.completionDate = null;
-          }
-          break;
-        }
-      }
-      _unfinishedChoresCount = chores.where((chore) => !chore.isCompleted).length;
+      _choreManagement.toggleCompletion(id, isCompleted, chores);
+      _unfinishedChoresCount = _choreManagement.getUnfinishedChoresCount(chores);
       _saveChores();
     });
   }
 
-
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-        title: Text(
-          'Dashboard',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Center(
-              child: Text(
-                FirebaseAuth.instance.currentUser?.email ?? '',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
+      title: Text(
+        'Dashboard',
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      elevation: 0,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Center(
+            child: Text(
+              FirebaseAuth.instance.currentUser?.email ?? '',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
-          IconButton(
-            icon: Icon(
-              Icons.logout,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
-            tooltip: 'Sign Out',
-            onPressed: () async {
+        ),
+        IconButton(
+          icon: Icon(
+            Icons.logout,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          tooltip: 'Sign Out',
+          onPressed: () async {
             await widget.auth.signOut();
           },
         ),
@@ -795,22 +592,22 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _loadChores() async {
-    List<Chore> loadedChores = await widget.storage.readChoreList();
+    List<Chore> loadedChores = await _choreManagement.loadChores();
     setState(() {
       chores = loadedChores;
-      _unfinishedChoresCount = chores.where((chore) => !chore.isCompleted).length;
+      _unfinishedChoresCount = _choreManagement.getUnfinishedChoresCount(chores);
     });
   }
 
   Future<void> _saveChores() async {
-    await widget.storage.writeChoreList(chores);
+    await _choreManagement.saveChores(chores);
   }
 
   @override
   void initState() {
     super.initState();
+    _choreManagement = ChoreManagement(widget.storage);
     _loadChores();
-    _unfinishedChoresCount = chores.where((chore) => !chore.isCompleted).length;
     _selectedDay = _focusedDay;
     _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay!));
   }
@@ -819,33 +616,82 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(context),
-      body: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "This Week at a Glance",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontStyle: FontStyle.italic,
-                      //fontWeight: FontWeight.bold,
+      body: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  CalendarWidget(
+                    focusedDay: _focusedDay,
+                    selectedDay: _selectedDay,
+                    rangeStart: _rangeStart,
+                    rangeEnd: _rangeEnd,
+                    calendarFormat: _calendarFormat,
+                    rangeSelectionMode: _rangeSelectionMode,
+                    chores: chores,
+                    onDaySelected: _onDaySelected,
+                    onRangeSelected: _onRangeSelected,
+                    onFormatChanged: (format) {
+                      if (_calendarFormat != format) {
+                        setState(() {
+                          _calendarFormat = format;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: MasterChoresListWidget(
+                            chores: chores,
+                            selectedChore: selectedChore,
+                            onSelect: (chore) {
+                              setState(() {
+                                selectedChore = chore;
+                              });
+                            },
+                            onDelete: (chore) {
+                              _deleteChore(chore.id);
+                            },
+                            onToggleComplete: (chore, isCompleted) {
+                              _toggleCompletion(chore.id, isCompleted);
+                            },
+                            onAddChore: () {
+                              _showAddChoreDialog();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _displayCalendarEvent(context),
+                        ),
+                      ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          if (selectedChore != null)
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ChoreDetailsWidget(
+                  selectedChore: selectedChore!,
+                  onToggleComplete: (id, isCompleted) {
+                    _toggleCompletion(id, isCompleted);
+                  },
                 ),
-                _displayCalendar(),
-                const SizedBox(height: 50),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _displayMasterChoresList(context),
-                      _displayCalendarEvent(context),
-                    ]
-                  ),
-                ),
-              ]
-            )
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
