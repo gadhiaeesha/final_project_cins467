@@ -36,13 +36,19 @@ class _DashboardPageState extends State<DashboardPage> {
   /// Functions for Calendar                                                                          *
   /// ************************************************************************************************
   List<Event> _getEventsForDay(DateTime day) {
-    // Implementation example
-    return kEvents[day] ?? [];
+    // Filter chores that have a completeBy date matching the given day
+    final choresForDay = chores.where((chore) {
+      if (chore.completeBy == null) return false;
+      return isSameDay(chore.completeBy!, day);
+    }).toList();
+
+    // Convert chores to events, including completion status in the title
+    return choresForDay.map((chore) => Event(
+      '${chore.name} ${chore.isCompleted ? '(Completed)' : '(Pending)'}'
+    )).toList();
   }
   List<Event> _getEventsForRange(DateTime start, DateTime end) {
-    // Implementation example
     final days = daysInRange(start, end);
-
     return [
       for (final d in days) ..._getEventsForDay(d),
     ];
@@ -52,10 +58,9 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _selectedDay = selectedDay;
         _focusedDay = focusedDay;
-        _rangeStart = null; // Important to clean those
+        _rangeStart = null;
         _rangeEnd = null;
         _rangeSelectionMode = RangeSelectionMode.toggledOn;
-        //displayEvent = true;
       });
 
       _selectedEvents.value = _getEventsForDay(selectedDay);
@@ -68,10 +73,8 @@ class _DashboardPageState extends State<DashboardPage> {
       _rangeStart = start;
       _rangeEnd = end;
       _rangeSelectionMode = RangeSelectionMode.toggledOn;
-      //displayEvent = true;
     });
 
-    // `start` or `end` could be null
     if (start != null && end != null) {
       _selectedEvents.value = _getEventsForRange(start, end);
     } else if (start != null) {
@@ -164,150 +167,332 @@ class _DashboardPageState extends State<DashboardPage> {
   /// ************************************************************************************************
   /// Displays Events/Deadlines                                                                      *
   /// ************************************************************************************************
-  Widget _displayCalendarEvent(BuildContext context){
-      return Container(
-        width: MediaQuery.of(context).size.width / 3,
-        height: MediaQuery.of(context).size.height / 2,
-        margin: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-          ),
+  Widget _displayCalendarEvent(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width / 3,
+      height: MediaQuery.of(context).size.height / 2,
+      margin: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
         ),
-        child: Column(
-          children: <Widget>[
-            Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.event,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Upcoming Deadlines/Events',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
+      ),
+      child: Column(
+        children: <Widget>[
+          Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
             ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Container(
-                child: ValueListenableBuilder<List<Event>>(
-                  valueListenable: _selectedEvents,
-                  builder: (context, value, _) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: value.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.event,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Chores for Selected Date',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: Container(
+              child: ValueListenableBuilder<List<Event>>(
+                valueListenable: _selectedEvents,
+                builder: (context, value, _) {
+                  if (value.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No chores scheduled for this date',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              fontStyle: FontStyle.italic,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: value.length,
+                    itemBuilder: (context, index) {
+                      final event = value[index];
+                      final choreName = event.title.replaceAll(RegExp(r'\s*\(Completed\)|\s*\(Pending\)'), '');
+                      final chore = chores.firstWhere(
+                        (c) => c.name == choreName,
+                        orElse: () => Chore(
+                          id: -1,
+                          name: choreName,
+                          description: 'Chore not found',
+                          isCompleted: false,
+                          completeBy: null,
+                          completionDate: null,
+                        ),
+                      );
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                           ),
-                          child: ListTile(
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text(
-                                    '${value[index]}',
-                                    style: Theme.of(context).textTheme.titleLarge,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ListTile(
+                          onTap: () => showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Dialog(
+                                insetPadding: const EdgeInsets.symmetric(
+                                  horizontal: 40,
+                                  vertical: 24,
+                                ),
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width * 0.4,
+                                  constraints: BoxConstraints(
+                                    maxHeight: MediaQuery.of(context).size.height * 0.7,
                                   ),
-                                  backgroundColor: Theme.of(context).colorScheme.surface,
-                                  contentPadding: const EdgeInsets.all(24),
-                                  content: Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Description",
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                fontWeight: FontWeight.bold,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(24),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.primaryContainer,
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            topRight: Radius.circular(12),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.task_alt,
+                                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                chore.name,
+                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
                                               ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surfaceVariant,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            "*Insert Event/Chore Description*",
-                                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                  fontStyle: FontStyle.italic,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: Text(
-                                        'Close',
-                                        style: TextStyle(
-                                          color: Theme.of(context).colorScheme.primary,
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
+                                      Flexible(
+                                        child: SingleChildScrollView(
+                                          padding: const EdgeInsets.all(24),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.description,
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    "Description",
+                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                          color: Theme.of(context).colorScheme.onSurface,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Container(
+                                                padding: const EdgeInsets.all(16),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).colorScheme.surfaceVariant,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  chore.description,
+                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 24),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.task_alt,
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    "Completion Status",
+                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                          color: Theme.of(context).colorScheme.onSurface,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: chore.isCompleted
+                                                      ? Theme.of(context).colorScheme.primaryContainer
+                                                      : Theme.of(context).colorScheme.errorContainer,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: chore.isCompleted
+                                                        ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                                                        : Theme.of(context).colorScheme.error.withOpacity(0.3),
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      chore.isCompleted
+                                                          ? Icons.check_circle
+                                                          : Icons.pending,
+                                                      color: chore.isCompleted
+                                                          ? Theme.of(context).colorScheme.primary
+                                                          : Theme.of(context).colorScheme.error,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      chore.isCompleted ? "Completed" : "Not Completed",
+                                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                            color: chore.isCompleted
+                                                                ? Theme.of(context).colorScheme.primary
+                                                                : Theme.of(context).colorScheme.error,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.surface,
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(12),
+                                            bottomRight: Radius.circular(12),
+                                          ),
+                                          border: Border(
+                                            top: BorderSide(
+                                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            TextButton.icon(
+                                              onPressed: () => Navigator.of(context).pop(),
+                                              icon: Icon(
+                                                Icons.close,
+                                                color: Theme.of(context).colorScheme.primary,
+                                              ),
+                                              label: Text(
+                                                'Close',
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          title: Text(
+                            chore.name,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
                             ),
-                            title: Text(
-                              '${value[index]}',
-                              style: Theme.of(context).textTheme.bodyLarge,
+                            decoration: BoxDecoration(
+                              color: chore.isCompleted
+                                  ? Theme.of(context).colorScheme.primaryContainer
+                                  : Theme.of(context).colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            trailing: Icon(
-                              Icons.chevron_right,
-                              color: Theme.of(context).colorScheme.primary,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  chore.isCompleted ? Icons.check_circle : Icons.pending,
+                                  size: 16,
+                                  color: chore.isCompleted
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.error,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  chore.isCompleted ? "Completed" : "Pending",
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: chore.isCompleted
+                                            ? Theme.of(context).colorScheme.primary
+                                            : Theme.of(context).colorScheme.error,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 
   /// ************************************************************************************************
@@ -315,8 +500,8 @@ class _DashboardPageState extends State<DashboardPage> {
   /// ************************************************************************************************
   Widget _displayMasterChoresList(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.33, // 1/3 of screen width
-      height: MediaQuery.of(context).size.height * 0.67, // 2/3 of screen height
+      width: MediaQuery.of(context).size.width / 3, // 1/3 of screen width
+      height: MediaQuery.of(context).size.height / 2, // 2/3 of screen height
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -462,7 +647,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   'Description:',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4), // Add a small space
+                const SizedBox(height: 4),
                 Text(
                   selectedChore!.description,
                   style: const TextStyle(fontSize: 16),
@@ -481,6 +666,20 @@ class _DashboardPageState extends State<DashboardPage> {
                     }
                   },
                 ),
+                if (selectedChore!.completeBy != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Complete By: ${selectedChore!.completeBy!.day}/${selectedChore!.completeBy!.month}/${selectedChore!.completeBy!.year}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
+                if (selectedChore!.completionDate != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Completed On: ${selectedChore!.completionDate!.day}/${selectedChore!.completionDate!.month}/${selectedChore!.completionDate!.year}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
               ],
             ),
           ),
@@ -494,8 +693,8 @@ class _DashboardPageState extends State<DashboardPage> {
       context: context,
       builder: (BuildContext context) {
         return AddChoreDialog(
-          onChoreAdded: (String name, String description, DateTime? completionDate) {
-            _addChore(name, description, completionDate);
+          onChoreAdded: (String name, String description, DateTime? completeBy) {
+            _addChore(name, description, completeBy);
           },
         );
       },
@@ -503,13 +702,14 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
 
-  void _addChore(String name, String description, DateTime? completionDate) {
+  void _addChore(String name, String description, DateTime? completeBy) {
     Chore newChore = Chore(
       id: chores.length, 
       name: name, 
       description: description, 
       isCompleted: false,
-      completionDate: completionDate
+      completeBy: completeBy,
+      completionDate: null,
     );
     chores.add(newChore);
     setState(() {

@@ -111,7 +111,7 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
                     onTap: () => _selectDate(context),
                     child: InputDecorator(
                       decoration: InputDecoration(
-                        labelText: 'Completion Date (Optional)',
+                        labelText: 'Complete By Date (Optional)',
                         prefixIcon: const Icon(Icons.calendar_today),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

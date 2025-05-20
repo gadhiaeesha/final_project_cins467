@@ -3,7 +3,8 @@ class Chore {
   String name;
   String description;
   bool isCompleted;
-  DateTime? completionDate;
+  DateTime? completionDate;  // When the chore was actually completed
+  DateTime? completeBy;      // When the chore needs to be completed by
 
   Chore({
     required this.id,
@@ -11,6 +12,7 @@ class Chore {
     required this.description,
     this.isCompleted = false,
     this.completionDate,
+    this.completeBy,
   });
 
   // Method to serialize the object to JSON format
@@ -21,6 +23,7 @@ class Chore {
       'description': description,
       'isCompleted': isCompleted,
       'completionDate': completionDate?.toIso8601String(),
+      'completeBy': completeBy?.toIso8601String(),
     };
   }
 
@@ -31,8 +34,11 @@ class Chore {
       name: data['name'],
       description: data['description'],
       isCompleted: data['isCompleted'] ?? false,
-      completionDate: data['completionDate'] != null
-          ? DateTime.parse(data['completionDate'])
+      completionDate: data['completionDate'] != null 
+          ? DateTime.parse(data['completionDate']) 
+          : null,
+      completeBy: data['completeBy'] != null 
+          ? DateTime.parse(data['completeBy']) 
           : null,
     );
   }
