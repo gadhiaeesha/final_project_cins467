@@ -494,8 +494,8 @@ class _DashboardPageState extends State<DashboardPage> {
       context: context,
       builder: (BuildContext context) {
         return AddChoreDialog(
-          onChoreAdded: (String name, String description) {
-            _addChore(name, description);
+          onChoreAdded: (String name, String description, DateTime? completionDate) {
+            _addChore(name, description, completionDate);
           },
         );
       },
@@ -503,12 +503,13 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
 
-  void _addChore(String name, String description) {
+  void _addChore(String name, String description, DateTime? completionDate) {
     Chore newChore = Chore(
       id: chores.length, 
       name: name, 
       description: description, 
-      isCompleted: false
+      isCompleted: false,
+      completionDate: completionDate
     );
     chores.add(newChore);
     setState(() {
@@ -539,6 +540,12 @@ class _DashboardPageState extends State<DashboardPage> {
       for (var chore in chores) {
         if (chore.id == id) {
           chore.isCompleted = isCompleted;
+          // Set completion date when marking as completed
+          if (isCompleted) {
+            chore.completionDate = DateTime.now();
+          } else {
+            chore.completionDate = null;
+          }
           break;
         }
       }

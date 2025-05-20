@@ -3,12 +3,14 @@ class Chore {
   String name;
   String description;
   bool isCompleted;
+  DateTime? completionDate;
 
   Chore({
     required this.id,
     required this.name,
     required this.description,
-    this.isCompleted = false, // Default to false if not provided
+    this.isCompleted = false,
+    this.completionDate,
   });
 
   // Method to serialize the object to JSON format
@@ -18,6 +20,7 @@ class Chore {
       'name': name,
       'description': description,
       'isCompleted': isCompleted,
+      'completionDate': completionDate?.toIso8601String(),
     };
   }
 
@@ -27,7 +30,10 @@ class Chore {
       id: data['id'],
       name: data['name'],
       description: data['description'],
-      isCompleted: data['isCompleted'] ?? false, // Ensure backward compatibility
+      isCompleted: data['isCompleted'] ?? false,
+      completionDate: data['completionDate'] != null
+          ? DateTime.parse(data['completionDate'])
+          : null,
     );
   }
 }

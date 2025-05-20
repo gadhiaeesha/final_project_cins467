@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AddChoreDialog extends StatefulWidget {
-  final Function(String, String) onChoreAdded;
+  final Function(String, String, DateTime?) onChoreAdded;
 
   const AddChoreDialog({super.key, required this.onChoreAdded});
 
@@ -13,11 +13,26 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
   final TextEditingController _choreController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  DateTime? _selectedDate;
 
   void _submitChore() {
     if (_formKey.currentState!.validate()) {
-      widget.onChoreAdded(_choreController.text, _detailsController.text);
+      widget.onChoreAdded(_choreController.text, _detailsController.text, _selectedDate);
       Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
     }
   }
 
@@ -91,6 +106,24 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => _selectDate(context),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Completion Date (Optional)',
+                        prefixIcon: const Icon(Icons.calendar_today),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        _selectedDate == null
+                            ? 'Select a date'
+                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -128,4 +161,4 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
     _detailsController.dispose();
     super.dispose();
   }
-} 
+}
