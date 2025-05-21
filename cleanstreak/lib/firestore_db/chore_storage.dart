@@ -18,7 +18,7 @@ class ChoreStorage {
             .map((doc) => Chore.fromJson(doc.data() as Map<String, dynamic>))
             .toList();
       } else {
-        debugPrint('No documents found in the chores collection.');
+        debugPrint('No chores yet!');
         return [];
       }
     } catch (e) {
