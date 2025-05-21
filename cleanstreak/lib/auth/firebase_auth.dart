@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/member.dart';
+import '../firestore_db/member_storage.dart';
 
 class FirebaseAuthService {
   // Create an instance of FirebaseAuth
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final MemberStorage _memberStorage = MemberStorage();
 
   // Properties to store user info
   String? uid;
@@ -74,6 +77,15 @@ class FirebaseAuthService {
         // Store user info
         uid = user.uid;
         userEmail = user.email;
+
+        // Create initial Member record
+        final member = Member(
+          userId: user.uid,
+          email: email,
+          role: 'member',
+          joinedAt: DateTime.now(),
+        );
+        await _memberStorage.saveMember(member);
 
         // Store auth state in SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
