@@ -14,12 +14,23 @@ class HouseholdStorage {
   // Create a new household
   Future<String> createHousehold(String name, Member creator) async {
     try {
-      final docRef = await firestore.collection(householdsCollection).add({
+      // Sanitize the name to be a valid document ID
+      final docId = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+      
+      // Check if a household with this name already exists
+      final existingDoc = await firestore.collection(householdsCollection).doc(docId).get();
+      if (existingDoc.exists) {
+        throw Exception('A household with this name already exists');
+      }
+
+      // Create the household with the sanitized name as the document ID
+      await firestore.collection(householdsCollection).doc(docId).set({
         'name': name,
         'members': [creator.toJson()],
         'createdAt': FieldValue.serverTimestamp(),
       });
-      return docRef.id;
+      
+      return docId;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error creating household: $e');
@@ -33,7 +44,7 @@ class HouseholdStorage {
     try {
       final doc = await firestore.collection(householdsCollection).doc(householdId).get();
       if (doc.exists) {
-        return Household.fromJson(doc.data()!);
+        return Household.fromJson(doc.data()!, docId: doc.id);
       }
       return null;
     } catch (e) {
@@ -53,7 +64,7 @@ class HouseholdStorage {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => Household.fromJson(doc.data()))
+          .map((doc) => Household.fromJson(doc.data(), docId: doc.id))
           .toList();
     } catch (e) {
       if (kDebugMode) {
@@ -152,6 +163,30 @@ class HouseholdStorage {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error deleting household: $e');
+      }
+      rethrow;
+    }
+  }
+
+  // Update a member in a household
+  Future<void> updateMember(String householdId, Member member) async {
+    try {
+      final household = await getHousehold(householdId);
+      if (household != null) {
+        final updatedMembers = household.members.map((m) {
+          if (m.userId == member.userId) {
+            return member;
+          }
+          return m;
+        }).toList();
+
+        await firestore.collection(householdsCollection).doc(householdId).update({
+          'members': updatedMembers.map((m) => m.toJson()).toList(),
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error updating member in household: $e');
       }
       rethrow;
     }

@@ -13,19 +13,18 @@ class Household {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
       'members': members.map((member) => member.toJson()).toList(),
     };
   }
 
-  factory Household.fromJson(Map<String, dynamic> data) {
+  factory Household.fromJson(Map<String, dynamic> data, {String? docId}) {
     return Household(
-      id: data['id'],
-      name: data['name'],
-      members: (data['members'] as List)
-          .map((memberData) => Member.fromJson(memberData))
-          .toList(),
+      id: docId ?? data['id'] ?? '',
+      name: data['name'] ?? '',
+      members: (data['members'] as List?)
+          ?.map((memberData) => Member.fromJson(memberData))
+          .toList() ?? [],
     );
   }
 }

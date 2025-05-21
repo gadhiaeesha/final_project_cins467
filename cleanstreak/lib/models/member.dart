@@ -20,7 +20,7 @@ class Member {
       'userId': userId,
       'name': name,
       'email': email,
-      'role': role,
+      'role': role ?? 'member',
       'joinedAt': joinedAt.toIso8601String(),
       'householdId': householdId,
     };
@@ -29,7 +29,7 @@ class Member {
   factory Member.fromJson(Map<String, dynamic> data) {
     return Member(
       userId: data['userId'],
-      name: data['name'] ?? '',
+      name: data['name'],
       email: data['email'],
       role: data['role'] ?? 'member',
       joinedAt: DateTime.parse(data['joinedAt']),
