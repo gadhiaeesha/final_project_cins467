@@ -5,6 +5,8 @@ class Chore {
   bool isCompleted;
   DateTime? completionDate;  // When the chore was actually completed
   DateTime? completeBy;      // When the chore needs to be completed by
+  String? householdId;
+  String? assignedTo;
 
   Chore({
     required this.id,
@@ -13,6 +15,8 @@ class Chore {
     this.isCompleted = false,
     this.completionDate,
     this.completeBy,
+    this.householdId,
+    this.assignedTo,
   });
 
   // Method to serialize the object to JSON format
@@ -24,6 +28,8 @@ class Chore {
       'isCompleted': isCompleted,
       'completionDate': completionDate?.toIso8601String(),
       'completeBy': completeBy?.toIso8601String(),
+      'householdId': householdId,
+      'assignedTo': assignedTo,
     };
   }
 
@@ -40,6 +46,8 @@ class Chore {
       completeBy: data['completeBy'] != null 
           ? DateTime.parse(data['completeBy']) 
           : null,
+      householdId: data['householdId'],
+      assignedTo: data['assignedTo'],
     );
   }
 }
