@@ -7,6 +7,7 @@ class ChoreManagement extends ChangeNotifier {
   List<Chore> _chores = [];
   Chore? _selectedChore;
   int _unfinishedChoresCount = 0;
+  String? _currentHouseholdId;
 
   ChoreManagement(this.storage);
 
@@ -14,21 +15,38 @@ class ChoreManagement extends ChangeNotifier {
   List<Chore> get chores => _chores;
   Chore? get selectedChore => _selectedChore;
   int get unfinishedChoresCount => _unfinishedChoresCount;
+  String? get currentHouseholdId => _currentHouseholdId;
+
+  // Set current household ID
+  void setCurrentHouseholdId(String? householdId) {
+    _currentHouseholdId = householdId;
+    loadChores(); // Reload chores when household changes
+  }
 
   // Load chores from storage
   Future<void> loadChores() async {
-    _chores = await storage.readChoreList();
+    if (_currentHouseholdId != null) {
+      _chores = await storage.readChoreList(_currentHouseholdId!);
+    } else {
+      _chores = [];
+    }
     _updateUnfinishedCount();
     notifyListeners();
   }
 
   // Save chores to storage
   Future<void> saveChores() async {
-    await storage.writeChoreList(_chores);
+    if (_currentHouseholdId != null) {
+      await storage.writeChoreList(_chores, _currentHouseholdId!);
+    }
   }
 
   // Add a new chore
   Future<void> addChore(String name, String description, DateTime? completeBy) async {
+    if (_currentHouseholdId == null) {
+      throw Exception('No household selected');
+    }
+
     Chore newChore = Chore(
       id: _chores.length,
       name: name,
@@ -36,6 +54,7 @@ class ChoreManagement extends ChangeNotifier {
       isCompleted: false,
       completeBy: completeBy,
       completionDate: null,
+      householdId: _currentHouseholdId,
     );
     _chores.add(newChore);
     _updateUnfinishedCount();

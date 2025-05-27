@@ -8,9 +8,12 @@ class ChoreStorage {
 
   ChoreStorage();
 
-  Future<List<Chore>> readChoreList() async {
+  Future<List<Chore>> readChoreList(String householdId) async {
     try {
-      final QuerySnapshot snapshot = await firestore.collection('chores').get();
+      final QuerySnapshot snapshot = await firestore
+          .collection(choresCollection)
+          .where('householdId', isEqualTo: householdId)
+          .get();
 
       if (snapshot.docs.isNotEmpty) {
         return snapshot.docs
@@ -18,7 +21,7 @@ class ChoreStorage {
             .map((doc) => Chore.fromJson(doc.data() as Map<String, dynamic>))
             .toList();
       } else {
-        debugPrint('No chores yet!');
+        debugPrint('No chores found for household: $householdId');
         return [];
       }
     } catch (e) {
@@ -29,19 +32,24 @@ class ChoreStorage {
     }
   }
 
-  Future<void> writeChoreList(List<Chore> chores) async {
+  Future<void> writeChoreList(List<Chore> chores, String householdId) async {
     try {
-      final CollectionReference choreCollection = firestore.collection('chores');
+      final CollectionReference choreCollection = firestore.collection(choresCollection);
 
-      // Clear the existing collection (optional, based on your requirements)
-      final QuerySnapshot existingChores = await choreCollection.get();
+      // Delete existing chores for this household
+      final QuerySnapshot existingChores = await choreCollection
+          .where('householdId', isEqualTo: householdId)
+          .get();
+      
       for (final doc in existingChores.docs) {
         await doc.reference.delete();
       }
 
       // Add the new list of chores using their names as document IDs
       for (final chore in chores) {
-        await choreCollection.doc(chore.name).set(chore.toJson());
+        // Sanitize the chore name to be a valid document ID
+        final docId = chore.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+        await choreCollection.doc(docId).set(chore.toJson());
       }
     } catch (e) {
       if (kDebugMode) {
@@ -52,7 +60,7 @@ class ChoreStorage {
 
   Future<void> resetAll() async {
     try {
-      final QuerySnapshot snapshot = await firestore.collection('chores').get();
+      final QuerySnapshot snapshot = await firestore.collection(choresCollection).get();
       for (final doc in snapshot.docs) {
         await doc.reference.delete();
       }

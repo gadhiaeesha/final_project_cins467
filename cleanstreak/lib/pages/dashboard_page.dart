@@ -3,7 +3,9 @@ import 'package:cleanstreak/dialogs/add_chore.dart';
 import 'package:cleanstreak/dialogs/welcome_dialog.dart';
 import 'package:cleanstreak/firestore_db/chore_storage.dart';
 import 'package:cleanstreak/firestore_db/member_storage.dart';
+import 'package:cleanstreak/firestore_db/household_storage.dart';
 import 'package:cleanstreak/models/chore.dart';
+import 'package:cleanstreak/models/household.dart';
 import 'package:cleanstreak/models/member.dart';
 import 'package:cleanstreak/widgets/calendar_widget.dart';
 import 'package:cleanstreak/widgets/chore_display_widgets.dart';
@@ -26,7 +28,11 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  late ChoreManagement _choreManagement;
+  final ChoreManagement _choreManagement = ChoreManagement(ChoreStorage());
+  final HouseholdStorage _householdStorage = HouseholdStorage();
+  final MemberStorage _memberStorage = MemberStorage();
+  Household? _currentHousehold;
+  bool _isLoading = false;
   bool _isInboxOpen = false;
   final GlobalKey _inboxButtonKey = GlobalKey();
   OverlayEntry? _overlayEntry;
@@ -623,12 +629,11 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _choreManagement = ChoreManagement(widget.storage);
-    _choreManagement.loadChores();
     _selectedDay = _focusedDay;
     _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay!));
     _loadMemberData();
     _checkAndShowWelcomeDialog();
+    _loadUserHousehold();
   }
 
   Future<void> _loadMemberData() async {
@@ -658,6 +663,46 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           );
         }
+      }
+    }
+  }
+
+  Future<void> _loadUserHousehold() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        // Get the member's profile
+        final member = await _memberStorage.getMember(currentUser.uid);
+        if (member != null && member.householdId != null) {
+          // Get the household using the member's householdId
+          final household = await _householdStorage.getHousehold(member.householdId!);
+          if (household != null) {
+            setState(() {
+              _currentHousehold = household;
+            });
+            // Set the current household ID in ChoreManagement
+            _choreManagement.setCurrentHouseholdId(household.id);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading household: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
