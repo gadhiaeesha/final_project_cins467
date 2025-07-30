@@ -76,6 +76,60 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
     );
   }
 
+  void _showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Household'),
+        content: const Text('Are you sure you want to delete this household? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteHousehold();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteHousehold() async {
+    if (_currentHousehold == null) return;
+
+    try {
+      await _storage.deleteHousehold(_currentHousehold!.id);
+      if (mounted) {
+        setState(() {
+          _currentHousehold = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Household deleted successfully'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting household: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -245,6 +299,16 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
                                 ],
                               ),
                             )).toList(),
+                            const Spacer(),
+                            ElevatedButton.icon(
+                              onPressed: () => _showDeleteConfirmationDialog(),
+                              icon: const Icon(Icons.delete_forever),
+                              label: const Text('Delete Household'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                                foregroundColor: Theme.of(context).colorScheme.onError,
+                              ),
+                            ),
                           ],
                         ),
                       ),

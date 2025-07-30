@@ -5,8 +5,8 @@ import '../models/member.dart';
 import '../models/invite.dart';
 
 class HouseholdStorage {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final String householdsCollection = 'households';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String _collection = 'households';
   final String invitesCollection = 'household_invites';
 
   HouseholdStorage();
@@ -14,23 +14,15 @@ class HouseholdStorage {
   // Create a new household
   Future<String> createHousehold(String name, Member creator) async {
     try {
-      // Sanitize the name to be a valid document ID
-      final docId = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
-      
-      // Check if a household with this name already exists
-      final existingDoc = await firestore.collection(householdsCollection).doc(docId).get();
-      if (existingDoc.exists) {
-        throw Exception('A household with this name already exists');
-      }
-
-      // Create the household with the sanitized name as the document ID
-      await firestore.collection(householdsCollection).doc(docId).set({
+      // Create the household with an auto-generated document ID
+      DocumentReference docRef = await _firestore.collection(_collection).add({
         'name': name,
         'members': [creator.toJson()],
         'createdAt': FieldValue.serverTimestamp(),
+        'choreIds': [],
       });
       
-      return docId;
+      return docRef.id;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error creating household: $e');
@@ -40,9 +32,9 @@ class HouseholdStorage {
   }
 
   // Get a household by ID
-  Future<Household?> getHousehold(String householdId) async {
+  Future<Household?> getHousehold(String id) async {
     try {
-      final doc = await firestore.collection(householdsCollection).doc(householdId).get();
+      final doc = await _firestore.collection(_collection).doc(id).get();
       if (doc.exists) {
         return Household.fromJson(doc.data()!, docId: doc.id);
       }
@@ -58,8 +50,8 @@ class HouseholdStorage {
   // Get all households for a user
   Future<List<Household>> getUserHouseholds(String userId) async {
     try {
-      final querySnapshot = await firestore
-          .collection(householdsCollection)
+      final querySnapshot = await _firestore
+          .collection(_collection)
           .where('members', arrayContains: {'userId': userId})
           .get();
 
@@ -77,7 +69,7 @@ class HouseholdStorage {
   // Add a member to a household
   Future<void> addMember(String householdId, Member member) async {
     try {
-      await firestore.collection(householdsCollection).doc(householdId).update({
+      await _firestore.collection(_collection).doc(householdId).update({
         'members': FieldValue.arrayUnion([member.toJson()])
       });
     } catch (e) {
@@ -98,7 +90,7 @@ class HouseholdStorage {
             .map((member) => member.toJson())
             .toList();
         
-        await firestore.collection(householdsCollection).doc(householdId).update({
+        await _firestore.collection(_collection).doc(householdId).update({
           'members': updatedMembers
         });
       }
@@ -113,7 +105,7 @@ class HouseholdStorage {
   // Create an invite
   Future<void> createInvite(Invite invite) async {
     try {
-      await firestore.collection(invitesCollection).add(invite.toJson());
+      await _firestore.collection(invitesCollection).add(invite.toJson());
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error creating invite: $e');
@@ -125,7 +117,7 @@ class HouseholdStorage {
   // Get pending invites for a user
   Future<List<Invite>> getPendingInvites(String email) async {
     try {
-      final querySnapshot = await firestore
+      final querySnapshot = await _firestore
           .collection(invitesCollection)
           .where('email', isEqualTo: email)
           .where('status', isEqualTo: 'pending')
@@ -145,7 +137,7 @@ class HouseholdStorage {
   // Update invite status
   Future<void> updateInviteStatus(String inviteId, String status) async {
     try {
-      await firestore.collection(invitesCollection).doc(inviteId).update({
+      await _firestore.collection(invitesCollection).doc(inviteId).update({
         'status': status
       });
     } catch (e) {
@@ -157,9 +149,9 @@ class HouseholdStorage {
   }
 
   // Delete a household
-  Future<void> deleteHousehold(String householdId) async {
+  Future<void> deleteHousehold(String id) async {
     try {
-      await firestore.collection(householdsCollection).doc(householdId).delete();
+      await _firestore.collection(_collection).doc(id).delete();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error deleting household: $e');
@@ -180,7 +172,7 @@ class HouseholdStorage {
           return m;
         }).toList();
 
-        await firestore.collection(householdsCollection).doc(householdId).update({
+        await _firestore.collection(_collection).doc(householdId).update({
           'members': updatedMembers.map((m) => m.toJson()).toList(),
         });
       }
@@ -189,6 +181,33 @@ class HouseholdStorage {
         debugPrint('Error updating member in household: $e');
       }
       rethrow;
+    }
+  }
+
+  // Update specific fields of a household
+  Future<void> updateHousehold(String id, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection(_collection).doc(id).update(data);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error updating household: $e');
+      }
+      rethrow;
+    }
+  }
+
+  // Get all households
+  Future<List<Household>> getAllHouseholds() async {
+    try {
+      QuerySnapshot snapshot = await _firestore.collection(_collection).get();
+      return snapshot.docs
+          .map((doc) => Household.fromJson(doc.data() as Map<String, dynamic>, docId: doc.id))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error getting all households: $e');
+      }
+      return [];
     }
   }
 }

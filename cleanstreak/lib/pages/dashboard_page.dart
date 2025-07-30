@@ -192,190 +192,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ],
                         ),
                         child: ListTile(
-                          onTap: () => showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Dialog(
-                                insetPadding: const EdgeInsets.symmetric(
-                                  horizontal: 40,
-                                  vertical: 24,
-                                ),
-                                child: Container(
-                                  width: MediaQuery.of(context).size.width * 0.4,
-                                  constraints: BoxConstraints(
-                                    maxHeight: MediaQuery.of(context).size.height * 0.7,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(24),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.primaryContainer,
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(12),
-                                            topRight: Radius.circular(12),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.task_alt,
-                                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                chore.name,
-                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Flexible(
-                                        child: SingleChildScrollView(
-                                          padding: const EdgeInsets.all(24),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.description,
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    "Description",
-                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                          color: Theme.of(context).colorScheme.onSurface,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Container(
-                                                padding: const EdgeInsets.all(16),
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context).colorScheme.surfaceVariant,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  chore.description,
-                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                      ),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 24),
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.task_alt,
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    "Completion Status",
-                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                          color: Theme.of(context).colorScheme.onSurface,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 8,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: chore.isCompleted
-                                                      ? Theme.of(context).colorScheme.primaryContainer
-                                                      : Theme.of(context).colorScheme.errorContainer,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                    color: chore.isCompleted
-                                                        ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                                                        : Theme.of(context).colorScheme.error.withOpacity(0.3),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      chore.isCompleted
-                                                          ? Icons.check_circle
-                                                          : Icons.pending,
-                                                      color: chore.isCompleted
-                                                          ? Theme.of(context).colorScheme.primary
-                                                          : Theme.of(context).colorScheme.error,
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      chore.isCompleted ? "Completed" : "Not Completed",
-                                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                            color: chore.isCompleted
-                                                                ? Theme.of(context).colorScheme.primary
-                                                                : Theme.of(context).colorScheme.error,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.surface,
-                                          borderRadius: const BorderRadius.only(
-                                            bottomLeft: Radius.circular(12),
-                                            bottomRight: Radius.circular(12),
-                                          ),
-                                          border: Border(
-                                            top: BorderSide(
-                                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                                            ),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.end,
-                                          children: [
-                                            TextButton.icon(
-                                              onPressed: () => Navigator.of(context).pop(),
-                                              icon: Icon(
-                                                Icons.close,
-                                                color: Theme.of(context).colorScheme.primary,
-                                              ),
-                                              label: Text(
-                                                'Close',
-                                                style: TextStyle(
-                                                  color: Theme.of(context).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                          onTap: () => _showChoreDetailsDialog(context, chore),
                           title: Text(
                             chore.name,
                             style: Theme.of(context).textTheme.bodyLarge,
@@ -677,15 +494,18 @@ class _DashboardPageState extends State<DashboardPage> {
       if (currentUser != null) {
         // Get the member's profile
         final member = await _memberStorage.getMember(currentUser.uid);
-        if (member != null && member.householdId != null) {
-          // Get the household using the member's householdId
-          final household = await _householdStorage.getHousehold(member.householdId!);
-          if (household != null) {
-            setState(() {
-              _currentHousehold = household;
-            });
-            // Set the current household ID in ChoreManagement
-            _choreManagement.setCurrentHouseholdId(household.id);
+        if (member != null) {
+          // Set the current user ID in ChoreManagement
+          _choreManagement.setCurrentUserId(currentUser.uid);
+          
+          if (member.householdId != null) {
+            // Get the household using the member's householdId
+            final household = await _householdStorage.getHousehold(member.householdId!);
+            if (household != null) {
+              setState(() {
+                _currentHousehold = household;
+              });
+            }
           }
         }
       }
@@ -723,84 +543,251 @@ class _DashboardPageState extends State<DashboardPage> {
         builder: (context, _) {
           return Stack(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    CalendarWidget(
+                      focusedDay: _focusedDay,
+                      selectedDay: _selectedDay,
+                      rangeStart: _rangeStart,
+                      rangeEnd: _rangeEnd,
+                      calendarFormat: _calendarFormat,
+                      rangeSelectionMode: _rangeSelectionMode,
+                      chores: _choreManagement.chores,
+                      onDaySelected: _onDaySelected,
+                      onRangeSelected: _onRangeSelected,
+                      onFormatChanged: (format) {
+                        if (_calendarFormat != format) {
+                          setState(() {
+                            _calendarFormat = format;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Row(
                         children: [
-                          CalendarWidget(
-                            focusedDay: _focusedDay,
-                            selectedDay: _selectedDay,
-                            rangeStart: _rangeStart,
-                            rangeEnd: _rangeEnd,
-                            calendarFormat: _calendarFormat,
-                            rangeSelectionMode: _rangeSelectionMode,
-                            chores: _choreManagement.chores,
-                            onDaySelected: _onDaySelected,
-                            onRangeSelected: _onRangeSelected,
-                            onFormatChanged: (format) {
-                              if (_calendarFormat != format) {
-                                setState(() {
-                                  _calendarFormat = format;
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
                           Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: MasterChoresListWidget(
-                                    chores: _choreManagement.chores,
-                                    selectedChore: _choreManagement.selectedChore,
-                                    onSelect: (chore) {
-                                      _choreManagement.selectChore(chore);
-                                    },
-                                    onDelete: (chore) {
-                                      _choreManagement.deleteChore(chore.id);
-                                    },
-                                    onToggleComplete: (chore, isCompleted) {
-                                      _choreManagement.toggleCompletion(chore.id, isCompleted);
-                                    },
-                                    onAddChore: () {
-                                      _showAddChoreDialog();
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _displayCalendarEvent(context),
-                                ),
-                              ],
+                            child: MasterChoresListWidget(
+                              chores: _choreManagement.chores,
+                              selectedChore: _choreManagement.selectedChore,
+                              onSelect: (chore) {
+                                _showChoreDetailsDialog(context, chore);
+                              },
+                              onDelete: (chore) {
+                                _choreManagement.deleteChore(chore.id);
+                              },
+                              onToggleComplete: (chore, isCompleted) {
+                                _choreManagement.toggleCompletion(chore.id, isCompleted);
+                              },
+                              onAddChore: () {
+                                _showAddChoreDialog();
+                              },
                             ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _displayCalendarEvent(context),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  if (_choreManagement.selectedChore != null)
-                    Expanded(
-                      flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: ChoreDetailsWidget(
-                          selectedChore: _choreManagement.selectedChore!,
-                          onToggleComplete: (id, isCompleted) {
-                            _choreManagement.toggleCompletion(id, isCompleted);
-                          },
-                        ),
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  void _showChoreDetailsDialog(BuildContext context, Chore chore) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 40,
+            vertical: 24,
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.4,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.task_alt,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          chore.name,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.description,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Description",
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            chore.description,
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.task_alt,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Completion Status",
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: chore.isCompleted
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: chore.isCompleted
+                                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                                  : Theme.of(context).colorScheme.error.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                chore.isCompleted
+                                    ? Icons.check_circle
+                                    : Icons.pending,
+                                color: chore.isCompleted
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                chore.isCompleted ? "Completed" : "Not Completed",
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: chore.isCompleted
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.error,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        label: Text(
+                          'Close',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

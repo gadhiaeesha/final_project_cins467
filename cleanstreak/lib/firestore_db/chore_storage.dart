@@ -8,11 +8,11 @@ class ChoreStorage {
 
   ChoreStorage();
 
-  Future<List<Chore>> readChoreList(String householdId) async {
+  Future<List<Chore>> readChoreList(String userId) async {
     try {
       final QuerySnapshot snapshot = await firestore
           .collection(choresCollection)
-          .where('householdId', isEqualTo: householdId)
+          .where('createdBy', isEqualTo: userId)
           .get();
 
       if (snapshot.docs.isNotEmpty) {
@@ -21,7 +21,7 @@ class ChoreStorage {
             .map((doc) => Chore.fromJson(doc.data() as Map<String, dynamic>))
             .toList();
       } else {
-        debugPrint('No chores found for household: $householdId');
+        debugPrint('No chores found for user: $userId');
         return [];
       }
     } catch (e) {
@@ -32,24 +32,38 @@ class ChoreStorage {
     }
   }
 
-  Future<void> writeChoreList(List<Chore> chores, String householdId) async {
+  Future<void> writeChoreList(List<Chore> chores, String userId) async {
     try {
       final CollectionReference choreCollection = firestore.collection(choresCollection);
-
-      // Delete existing chores for this household
+      
+      // Get existing chores for this user
       final QuerySnapshot existingChores = await choreCollection
-          .where('householdId', isEqualTo: householdId)
+          .where('createdBy', isEqualTo: userId)
           .get();
       
-      for (final doc in existingChores.docs) {
-        await doc.reference.delete();
-      }
-
-      // Add the new list of chores using their names as document IDs
+      // Create a map of existing chores by their ID
+      final Map<int, DocumentSnapshot> existingChoresMap = {
+        for (var doc in existingChores.docs)
+          (doc.data() as Map<String, dynamic>)['id'] as int: doc
+      };
+      
+      // Update or create chores
       for (final chore in chores) {
-        // Sanitize the chore name to be a valid document ID
-        final docId = chore.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
-        await choreCollection.doc(docId).set(chore.toJson());
+        if (existingChoresMap.containsKey(chore.id)) {
+          // Update existing chore
+          await existingChoresMap[chore.id]!.reference.update(chore.toJson());
+        } else {
+          // Create new chore with random ID
+          await choreCollection.add(chore.toJson());
+        }
+      }
+      
+      // Delete chores that are no longer in the list
+      for (final doc in existingChores.docs) {
+        final choreId = (doc.data() as Map<String, dynamic>)['id'] as int;
+        if (!chores.any((chore) => chore.id == choreId)) {
+          await doc.reference.delete();
+        }
       }
     } catch (e) {
       if (kDebugMode) {

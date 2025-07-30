@@ -7,6 +7,7 @@ class Chore {
   DateTime? completeBy;      // When the chore needs to be completed by
   String? householdId;
   String? assignedTo;
+  String? createdBy;        // The user ID of who created the chore
 
   Chore({
     required this.id,
@@ -17,6 +18,7 @@ class Chore {
     this.completeBy,
     this.householdId,
     this.assignedTo,
+    this.createdBy,
   });
 
   // Method to serialize the object to JSON format
@@ -30,6 +32,7 @@ class Chore {
       'completeBy': completeBy?.toIso8601String(),
       'householdId': householdId,
       'assignedTo': assignedTo,
+      'createdBy': createdBy,
     };
   }
 
@@ -48,6 +51,7 @@ class Chore {
           : null,
       householdId: data['householdId'],
       assignedTo: data['assignedTo'],
+      createdBy: data['createdBy'],
     );
   }
 }
