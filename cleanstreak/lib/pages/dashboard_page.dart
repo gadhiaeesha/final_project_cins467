@@ -7,9 +7,11 @@ import 'package:cleanstreak/firestore_db/household_storage.dart';
 import 'package:cleanstreak/models/chore.dart';
 import 'package:cleanstreak/models/household.dart';
 import 'package:cleanstreak/models/member.dart';
+import 'package:cleanstreak/models/invite.dart';
 import 'package:cleanstreak/widgets/calendar_widget.dart';
 import 'package:cleanstreak/widgets/chore_display_widgets.dart';
 import 'package:cleanstreak/services/chore_management.dart';
+import 'package:cleanstreak/services/invite_management.dart';
 import 'package:cleanstreak/widgets/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -31,12 +33,14 @@ class _DashboardPageState extends State<DashboardPage> {
   final ChoreManagement _choreManagement = ChoreManagement(ChoreStorage());
   final HouseholdStorage _householdStorage = HouseholdStorage();
   final MemberStorage _memberStorage = MemberStorage();
+  final InviteManagement _inviteManagement = InviteManagement();
   Household? _currentHousehold;
   bool _isLoading = false;
   bool _isInboxOpen = false;
   final GlobalKey _inboxButtonKey = GlobalKey();
   OverlayEntry? _overlayEntry;
   Member? _currentMember;
+  List<Invite> _pendingInvites = [];
 
   late final ValueNotifier<List<Event>> _selectedEvents;
   CalendarFormat _calendarFormat = CalendarFormat.week;
@@ -277,7 +281,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 Icons.inbox,
                 color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
-              if (0 > 0)  // Replace 0 with actual notification count when implemented
+              if (_pendingInvites.isNotEmpty)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -288,7 +292,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      '0',  // Replace with actual notification count when implemented
+                      '${_pendingInvites.length}',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onError,
                         fontSize: 10,
@@ -416,20 +420,68 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                     Flexible(
-                      child: ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          Center(
-                            child: Text(
-                              'No invites yet',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                    fontStyle: FontStyle.italic,
+                      child: _pendingInvites.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No invites yet',
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _pendingInvites.length,
+                              itemBuilder: (context, index) {
+                                final invite = _pendingInvites[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                      child: Icon(
+                                        Icons.home_work,
+                                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      'Household Invite',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    subtitle: Text(
+                                      'You have been invited to join a household',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                          ),
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.check,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                          onPressed: () => _acceptInvite(invite),
+                                          tooltip: 'Accept',
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.close,
+                                            color: Theme.of(context).colorScheme.error,
+                                          ),
+                                          onPressed: () => _declineInvite(invite),
+                                          tooltip: 'Decline',
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                );
+                              },
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -451,6 +503,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _loadMemberData();
     _checkAndShowWelcomeDialog();
     _loadUserHousehold();
+    _loadPendingInvites();
   }
 
   Future<void> _loadMemberData() async {
@@ -523,6 +576,90 @@ class _DashboardPageState extends State<DashboardPage> {
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _loadPendingInvites() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        final invites = await _inviteManagement.getPendingInvites(currentUser.uid);
+        if (mounted) {
+          setState(() {
+            _pendingInvites = invites;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading invites: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _acceptInvite(Invite invite) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      await _inviteManagement.acceptInvite(invite.id!, currentUser.uid);
+      
+      // Reload invites and household data
+      await _loadPendingInvites();
+      await _loadUserHousehold();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Invite accepted! You are now part of the household.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error accepting invite: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _declineInvite(Invite invite) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      await _inviteManagement.declineInvite(invite.id!, currentUser.uid);
+      
+      // Reload invites
+      await _loadPendingInvites();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Invite declined.'),
+            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error declining invite: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
   }

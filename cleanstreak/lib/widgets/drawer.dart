@@ -3,6 +3,7 @@ import '../models/household.dart';
 import '../firestore_db/household_storage.dart';
 import '../firestore_db/member_storage.dart';
 import '../dialogs/create_house.dart';
+import '../dialogs/send_invite.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HouseholdDrawer extends StatefulWidget {
@@ -74,6 +75,18 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
         },
       ),
     );
+  }
+
+  void _showSendInviteDialog() {
+    if (_currentHousehold != null) {
+      showDialog(
+        context: context,
+        builder: (context) => SendInviteDialog(
+          householdId: _currentHousehold!.id,
+          householdName: _currentHousehold!.name,
+        ),
+      );
+    }
   }
 
   void _showDeleteConfirmationDialog() {
@@ -300,6 +313,12 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
                               ),
                             )).toList(),
                             const Spacer(),
+                            ElevatedButton.icon(
+                              onPressed: _showSendInviteDialog,
+                              icon: const Icon(Icons.person_add),
+                              label: const Text('Invite Member'),
+                            ),
+                            const SizedBox(height: 12),
                             ElevatedButton.icon(
                               onPressed: () => _showDeleteConfirmationDialog(),
                               icon: const Icon(Icons.delete_forever),

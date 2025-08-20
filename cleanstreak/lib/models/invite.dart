@@ -1,33 +1,36 @@
 class Invite {
-  final String email;
-  final String householdId;
-  final String invitedBy;
-  final String status; // 'pending', 'accepted', 'rejected'
+  final String? id;         // Document ID from Firestore
+  final String inviteFrom;  // User ID of the person sending the invite
+  final String inviteTo;    // User ID of the person receiving the invite
+  final String householdId; // ID of the household they're being invited to
+  final String status;      // 'pending', 'accepted', 'declined', 'left household'
   final DateTime createdAt;
 
   Invite({
-    required this.email,
+    this.id,
+    required this.inviteFrom,
+    required this.inviteTo,
     required this.householdId,
-    required this.invitedBy,
     required this.status,
     required this.createdAt,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'email': email,
+      'inviteFrom': inviteFrom,
+      'inviteTo': inviteTo,
       'householdId': householdId,
-      'invitedBy': invitedBy,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  factory Invite.fromJson(Map<String, dynamic> data) {
+  factory Invite.fromJson(Map<String, dynamic> data, {String? id}) {
     return Invite(
-      email: data['email'],
+      id: id,
+      inviteFrom: data['inviteFrom'],
+      inviteTo: data['inviteTo'],
       householdId: data['householdId'],
-      invitedBy: data['invitedBy'],
       status: data['status'],
       createdAt: DateTime.parse(data['createdAt']),
     );
