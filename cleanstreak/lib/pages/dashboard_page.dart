@@ -560,6 +560,12 @@ class _DashboardPageState extends State<DashboardPage> {
               });
             }
           }
+          
+          // Debug: Check what chores are in the database
+          await widget.storage.debugChores(currentUser.uid);
+          
+          // Load chores after household status is determined
+          await _choreManagement.loadChores();
         }
       }
     } catch (e) {
@@ -610,9 +616,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
       await _inviteManagement.acceptInvite(invite.id!, currentUser.uid);
       
-      // Reload invites and household data
+      // Reload invites, household data, and chores (mode change)
       await _loadPendingInvites();
       await _loadUserHousehold();
+      await _choreManagement.reloadChores();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -30,7 +30,7 @@ class ChoreManagement extends ChangeNotifier {
     loadChores(); // Reload chores when user changes
   }
 
-  // Load chores from storage
+  // Load chores from storage (handles mode changes)
   Future<void> loadChores() async {
     if (_currentUserId != null) {
       _chores = await storage.readChoreList(_currentUserId!);
@@ -41,6 +41,11 @@ class ChoreManagement extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Reload chores when user mode changes (e.g., joins/leaves household)
+  Future<void> reloadChores() async {
+    await loadChores();
+  }
+
   // Save chores to storage
   Future<void> saveChores() async {
     if (_currentUserId != null) {
@@ -48,21 +53,21 @@ class ChoreManagement extends ChangeNotifier {
     }
   }
 
-  // Add a new chore
+  // Add a new chore (handles both single-user and household modes)
   Future<void> addChore(String name, String description, DateTime? completeBy) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       throw Exception('No user logged in');
     }
 
-    // Get the current member's household ID
+    // Get the current member's household ID to determine mode
     String? householdId;
     final member = await memberStorage.getMember(currentUser.uid);
     if (member != null) {
       householdId = member.householdId;
     }
 
-    // Create the new chore
+    // Create the new chore with appropriate householdId
     Chore newChore = Chore(
       id: _chores.length,
       name: name,
@@ -70,7 +75,7 @@ class ChoreManagement extends ChangeNotifier {
       isCompleted: false,
       completeBy: completeBy,
       completionDate: null,
-      householdId: householdId,
+      householdId: householdId, // null for single-user, householdId for household mode
       assignedTo: null,
       createdBy: currentUser.uid,
     );
