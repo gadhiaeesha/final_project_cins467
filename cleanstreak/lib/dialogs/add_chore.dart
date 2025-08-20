@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AddChoreDialog extends StatefulWidget {
-  final Function(String, String, DateTime?) onChoreAdded;
+  final Function(String, String, DateTime?, bool) onChoreAdded;
+  final bool isInHousehold;
 
-  const AddChoreDialog({super.key, required this.onChoreAdded});
+  const AddChoreDialog({
+    super.key, 
+    required this.onChoreAdded,
+    required this.isInHousehold,
+  });
 
   @override
   _AddChoreDialogState createState() => _AddChoreDialogState();
@@ -14,10 +19,11 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
   final TextEditingController _detailsController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   DateTime? _selectedDate;
+  bool _isHouseholdChore = false;
 
   void _submitChore() {
     if (_formKey.currentState!.validate()) {
-      widget.onChoreAdded(_choreController.text, _detailsController.text, _selectedDate);
+      widget.onChoreAdded(_choreController.text, _detailsController.text, _selectedDate, _isHouseholdChore);
       Navigator.of(context).pop();
     }
   }
@@ -34,6 +40,12 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
         _selectedDate = picked;
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _isHouseholdChore = widget.isInHousehold;
   }
 
   @override
@@ -124,6 +136,21 @@ class _AddChoreDialogState extends State<AddChoreDialog> {
                       ),
                     ),
                   ),
+                  if (widget.isInHousehold) ...[
+                    const SizedBox(height: 16),
+                    CheckboxListTile(
+                      title: const Text('Make this a household chore'),
+                      subtitle: const Text('This chore will be visible to all household members'),
+                      value: _isHouseholdChore,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _isHouseholdChore = value ?? false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
                 ],
               ),
             ),

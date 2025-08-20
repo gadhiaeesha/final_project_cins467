@@ -12,6 +12,7 @@ import 'package:cleanstreak/widgets/calendar_widget.dart';
 import 'package:cleanstreak/widgets/chore_display_widgets.dart';
 import 'package:cleanstreak/services/chore_management.dart';
 import 'package:cleanstreak/services/invite_management.dart';
+import 'package:cleanstreak/services/household_management.dart';
 import 'package:cleanstreak/widgets/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -34,6 +35,7 @@ class _DashboardPageState extends State<DashboardPage> {
   final HouseholdStorage _householdStorage = HouseholdStorage();
   final MemberStorage _memberStorage = MemberStorage();
   final InviteManagement _inviteManagement = InviteManagement();
+  final HouseholdManagement _householdManagement = HouseholdManagement();
   Household? _currentHousehold;
   bool _isLoading = false;
   bool _isInboxOpen = false;
@@ -253,8 +255,9 @@ class _DashboardPageState extends State<DashboardPage> {
       context: context,
       builder: (BuildContext context) {
         return AddChoreDialog(
-          onChoreAdded: (String name, String description, DateTime? completeBy) {
-            _choreManagement.addChore(name, description, completeBy);
+          isInHousehold: _currentHousehold != null,
+          onChoreAdded: (String name, String description, DateTime? completeBy, bool isHouseholdChore) {
+            _choreManagement.addChore(name, description, completeBy, isHouseholdChore: isHouseholdChore);
           },
         );
       },
@@ -681,7 +684,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       appBar: _buildAppBar(context),
-      endDrawer: const HouseholdDrawer(),
+      endDrawer: HouseholdDrawer(
+        onHouseholdLeft: () async {
+          // Reload data when user leaves household
+          await _loadUserHousehold();
+          await _loadPendingInvites();
+        },
+      ),
       body: ListenableBuilder(
         listenable: _choreManagement,
         builder: (context, _) {

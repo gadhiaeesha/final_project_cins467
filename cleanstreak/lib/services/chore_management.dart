@@ -46,57 +46,69 @@ class ChoreManagement extends ChangeNotifier {
     await loadChores();
   }
 
-  // Save chores to storage
+  // Save chores to storage (deprecated - use individual CRUD operations instead)
   Future<void> saveChores() async {
-    if (_currentUserId != null) {
-      await storage.writeChoreList(_chores, _currentUserId!);
-    }
+    // This method is deprecated. Use individual CRUD operations instead.
+    debugPrint('Warning: saveChores() is deprecated. Use individual CRUD operations.');
   }
 
   // Add a new chore (handles both single-user and household modes)
-  Future<void> addChore(String name, String description, DateTime? completeBy) async {
+  Future<void> addChore(String name, String description, DateTime? completeBy, {bool isHouseholdChore = false}) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       throw Exception('No user logged in');
     }
 
-    // Get the current member's household ID to determine mode
+    // Get the current member's household ID
     String? householdId;
     final member = await memberStorage.getMember(currentUser.uid);
     if (member != null) {
       householdId = member.householdId;
     }
 
+    // Determine the householdId for the chore based on user choice
+    String? choreHouseholdId;
+    if (isHouseholdChore && householdId != null) {
+      choreHouseholdId = householdId;
+    } else {
+      choreHouseholdId = null; // Personal chore
+    }
+
+    // Generate unique ID for the new chore
+    final uniqueId = await storage.generateUniqueId();
+
     // Create the new chore with appropriate householdId
     Chore newChore = Chore(
-      id: _chores.length,
+      id: uniqueId,
       name: name,
       description: description,
       isCompleted: false,
       completeBy: completeBy,
       completionDate: null,
-      householdId: householdId, // null for single-user, householdId for household mode
+      householdId: choreHouseholdId, // null for personal, householdId for household chore
       assignedTo: null,
       createdBy: currentUser.uid,
     );
 
-    // Add to chores list
-    _chores.add(newChore);
+    // Create the chore in the database and get it back with document ID
+    final createdChore = await storage.createChore(newChore);
+
+    // Add to chores list with document ID
+    _chores.add(createdChore);
     _updateUnfinishedCount();
 
     // If the chore belongs to a household, add it to the household's list
-    if (householdId != null) {
-      final household = await householdStorage.getHousehold(householdId);
+    if (choreHouseholdId != null) {
+      final household = await householdStorage.getHousehold(choreHouseholdId);
       if (household != null) {
-        final updatedChoreIds = List<String>.from(household.choreIds)..add(newChore.id.toString());
+        final updatedChoreIds = List<String>.from(household.choreIds)..add(createdChore.id.toString());
         await householdStorage.updateHousehold(
-          householdId,
+          choreHouseholdId,
           {'choreIds': updatedChoreIds},
         );
       }
     }
 
-    await saveChores();
     notifyListeners();
   }
 
@@ -104,6 +116,11 @@ class ChoreManagement extends ChangeNotifier {
   Future<void> deleteChore(int id) async {
     final choreToDelete = _chores.firstWhere((chore) => chore.id == id);
     final householdId = choreToDelete.householdId;
+    final documentId = choreToDelete.documentId;
+
+    if (documentId == null) {
+      throw Exception('Cannot delete chore without document ID');
+    }
 
     // Remove from chores list
     _chores.removeWhere((chore) => chore.id == id);
@@ -111,6 +128,9 @@ class ChoreManagement extends ChangeNotifier {
       _selectedChore = null;
     }
     _updateUnfinishedCount();
+
+    // Delete from database
+    await storage.deleteChore(documentId);
 
     // If the chore belonged to a household, remove it from the household's list
     if (householdId != null) {
@@ -125,7 +145,6 @@ class ChoreManagement extends ChangeNotifier {
       }
     }
 
-    await saveChores();
     notifyListeners();
   }
 
@@ -139,11 +158,13 @@ class ChoreManagement extends ChangeNotifier {
         } else {
           chore.completionDate = null;
         }
+        
+        // Update in database
+        await storage.updateChore(chore);
         break;
       }
     }
     _updateUnfinishedCount();
-    await saveChores();
     notifyListeners();
   }
 
@@ -152,10 +173,11 @@ class ChoreManagement extends ChangeNotifier {
     for (var chore in _chores) {
       if (chore.id == choreId) {
         chore.assignedTo = memberId;
+        // Update in database
+        await storage.updateChore(chore);
         break;
       }
     }
-    await saveChores();
     notifyListeners();
   }
 
@@ -164,10 +186,11 @@ class ChoreManagement extends ChangeNotifier {
     for (var chore in _chores) {
       if (chore.id == choreId) {
         chore.assignedTo = null;
+        // Update in database
+        await storage.updateChore(chore);
         break;
       }
     }
-    await saveChores();
     notifyListeners();
   }
 

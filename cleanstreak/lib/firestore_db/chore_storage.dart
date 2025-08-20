@@ -22,22 +22,50 @@ class ChoreStorage {
       final householdId = memberData['householdId'];
 
       if (householdId != null) {
-        // Household Mode: Load all household chores
-        debugPrint('Loading household chores for household: $householdId');
-        final QuerySnapshot snapshot = await firestore
+        // Household Mode: Load both household chores AND personal chores
+        debugPrint('Loading household and personal chores for user: $userId in household: $householdId');
+        
+        List<Chore> allChores = [];
+        
+        // Load household chores
+        final householdSnapshot = await firestore
             .collection(choresCollection)
             .where('householdId', isEqualTo: householdId)
             .get();
 
-        if (snapshot.docs.isNotEmpty) {
-          return snapshot.docs
+        if (householdSnapshot.docs.isNotEmpty) {
+          final householdChores = householdSnapshot.docs
               .where((doc) => doc.data() != null)
-              .map((doc) => Chore.fromJson(doc.data() as Map<String, dynamic>))
+              .map((doc) => Chore.fromJson(
+                doc.data() as Map<String, dynamic>,
+                documentId: doc.id,
+              ))
               .toList();
-        } else {
-          debugPrint('No household chores found for household: $householdId');
-          return [];
+          allChores.addAll(householdChores);
+          debugPrint('Loaded ${householdChores.length} household chores');
         }
+
+        // Load personal chores (householdId = null)
+        final personalSnapshot = await firestore
+            .collection(choresCollection)
+            .where('createdBy', isEqualTo: userId)
+            .where('householdId', isNull: true)
+            .get();
+
+        if (personalSnapshot.docs.isNotEmpty) {
+          final personalChores = personalSnapshot.docs
+              .where((doc) => doc.data() != null)
+              .map((doc) => Chore.fromJson(
+                doc.data() as Map<String, dynamic>,
+                documentId: doc.id,
+              ))
+              .toList();
+          allChores.addAll(personalChores);
+          debugPrint('Loaded ${personalChores.length} personal chores');
+        }
+
+        debugPrint('Total chores loaded: ${allChores.length}');
+        return allChores;
       } else {
         // Single User Mode: Load only user's personal chores
         debugPrint('Loading personal chores for user: $userId');
@@ -50,7 +78,10 @@ class ChoreStorage {
         if (snapshot.docs.isNotEmpty) {
           return snapshot.docs
               .where((doc) => doc.data() != null)
-              .map((doc) => Chore.fromJson(doc.data() as Map<String, dynamic>))
+              .map((doc) => Chore.fromJson(
+                doc.data() as Map<String, dynamic>,
+                documentId: doc.id,
+              ))
               .toList();
         } else {
           debugPrint('No personal chores found for user: $userId');
@@ -65,63 +96,62 @@ class ChoreStorage {
     }
   }
 
-  Future<void> writeChoreList(List<Chore> chores, String userId) async {
+  // Create a new chore
+  Future<Chore> createChore(Chore chore) async {
     try {
-      final CollectionReference choreCollection = firestore.collection(choresCollection);
-      
-      // Get the user's member profile to determine mode
-      final memberDoc = await firestore.collection('members').doc(userId).get();
-      if (!memberDoc.exists) {
-        debugPrint('Member not found for user: $userId');
-        return;
-      }
-
-      final memberData = memberDoc.data() as Map<String, dynamic>;
-      final householdId = memberData['householdId'];
-
-      QuerySnapshot existingChores;
-      
-      if (householdId != null) {
-        // Household Mode: Get existing household chores
-        existingChores = await choreCollection
-            .where('householdId', isEqualTo: householdId)
-            .get();
-      } else {
-        // Single User Mode: Get existing personal chores
-        existingChores = await choreCollection
-            .where('createdBy', isEqualTo: userId)
-            .where('householdId', isNull: true)
-            .get();
-      }
-      
-      // Create a map of existing chores by their ID
-      final Map<int, DocumentSnapshot> existingChoresMap = {
-        for (var doc in existingChores.docs)
-          (doc.data() as Map<String, dynamic>)['id'] as int: doc
-      };
-      
-      // Update or create chores
-      for (final chore in chores) {
-        if (existingChoresMap.containsKey(chore.id)) {
-          // Update existing chore
-          await existingChoresMap[chore.id]!.reference.update(chore.toJson());
-        } else {
-          // Create new chore with random ID
-          await choreCollection.add(chore.toJson());
-        }
-      }
-      
-      // Delete chores that are no longer in the list
-      for (final doc in existingChores.docs) {
-        final choreId = (doc.data() as Map<String, dynamic>)['id'] as int;
-        if (!chores.any((chore) => chore.id == choreId)) {
-          await doc.reference.delete();
-        }
-      }
+      final docRef = await firestore.collection(choresCollection).add(chore.toJson());
+      // Return the chore with the document ID
+      return Chore(
+        id: chore.id,
+        documentId: docRef.id,
+        name: chore.name,
+        description: chore.description,
+        isCompleted: chore.isCompleted,
+        completionDate: chore.completionDate,
+        completeBy: chore.completeBy,
+        householdId: chore.householdId,
+        assignedTo: chore.assignedTo,
+        createdBy: chore.createdBy,
+      );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error writing chores list to Firestore: $e');
+        debugPrint('Error creating chore: $e');
       }
+      rethrow;
+    }
+  }
+
+  // Update an existing chore
+  Future<void> updateChore(Chore chore) async {
+    try {
+      if (chore.documentId == null) {
+        throw Exception('Cannot update chore without document ID');
+      }
+      
+      await firestore
+          .collection(choresCollection)
+          .doc(chore.documentId)
+          .update(chore.toJson());
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error updating chore: $e');
+      }
+      rethrow;
+    }
+  }
+
+  // Delete a chore
+  Future<void> deleteChore(String documentId) async {
+    try {
+      await firestore
+          .collection(choresCollection)
+          .doc(documentId)
+          .delete();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error deleting chore: $e');
+      }
+      rethrow;
     }
   }
 
@@ -136,6 +166,32 @@ class ChoreStorage {
       if (kDebugMode) {
         debugPrint('Error resetting chores data in Firestore: $e');
       }
+    }
+  }
+
+
+
+  // Generate a unique ID for new chores
+  Future<int> generateUniqueId() async {
+    try {
+      final snapshot = await firestore.collection(choresCollection).get();
+      int maxId = 0;
+      
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final id = data['id'] as int? ?? 0;
+        if (id > maxId) {
+          maxId = id;
+        }
+      }
+      
+      return maxId + 1;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error generating unique ID: $e');
+      }
+      // Fallback: use timestamp as ID
+      return DateTime.now().millisecondsSinceEpoch;
     }
   }
 

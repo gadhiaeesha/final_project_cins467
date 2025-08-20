@@ -1,5 +1,6 @@
 class Chore {
-  int id;
+  int id;  // Keep for backward compatibility and UI purposes
+  String? documentId;  // Firestore document ID for reliable database operations
   String name;
   String description;
   bool isCompleted;
@@ -11,6 +12,7 @@ class Chore {
 
   Chore({
     required this.id,
+    this.documentId,
     required this.name,
     required this.description,
     this.isCompleted = false,
@@ -33,13 +35,15 @@ class Chore {
       'householdId': householdId,
       'assignedTo': assignedTo,
       'createdBy': createdBy,
+      // Note: documentId is not included in toJson as it's managed by Firestore
     };
   }
 
   // Factory constructor to deserialize JSON format to object
-  factory Chore.fromJson(Map<String, dynamic> data) {
+  factory Chore.fromJson(Map<String, dynamic> data, {String? documentId}) {
     return Chore(
       id: data['id'],
+      documentId: documentId,  // Pass the Firestore document ID
       name: data['name'],
       description: data['description'],
       isCompleted: data['isCompleted'] ?? false,

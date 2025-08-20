@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import '../models/household.dart';
 import '../firestore_db/household_storage.dart';
 import '../firestore_db/member_storage.dart';
+import '../services/household_management.dart';
 import '../dialogs/create_house.dart';
 import '../dialogs/send_invite.dart';
+import '../dialogs/household_settings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HouseholdDrawer extends StatefulWidget {
-  const HouseholdDrawer({super.key});
+  final VoidCallback? onHouseholdLeft;
+  
+  const HouseholdDrawer({super.key, this.onHouseholdLeft});
 
   @override
   State<HouseholdDrawer> createState() => _HouseholdDrawerState();
@@ -16,6 +20,7 @@ class HouseholdDrawer extends StatefulWidget {
 class _HouseholdDrawerState extends State<HouseholdDrawer> {
   final HouseholdStorage _storage = HouseholdStorage();
   final MemberStorage _memberStorage = MemberStorage();
+  final HouseholdManagement _householdManagement = HouseholdManagement();
   Household? _currentHousehold;
   bool _isLoading = true;
 
@@ -89,6 +94,45 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
     }
   }
 
+  void _showHouseholdSettingsDialog() {
+    if (_currentHousehold != null) {
+      showDialog(
+        context: context,
+        builder: (context) => HouseholdSettingsDialog(
+          householdId: _currentHousehold!.id,
+          householdName: _currentHousehold!.name,
+        ),
+      );
+    }
+  }
+
+  void _showLeaveConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave Household'),
+        content: const Text('Are you sure you want to leave this household? You will no longer have access to household chores.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _leaveHousehold();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showDeleteConfirmationDialog() {
     showDialog(
       context: context,
@@ -114,6 +158,38 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
         ],
       ),
     );
+  }
+
+  Future<void> _leaveHousehold() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      await _householdManagement.leaveHousehold(currentUser.uid);
+      
+      if (mounted) {
+        setState(() {
+          _currentHousehold = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully left the household'),
+          ),
+        );
+        
+        // Notify parent widget
+        widget.onHouseholdLeft?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error leaving household: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _deleteHousehold() async {
@@ -294,17 +370,13 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: member.role == 'admin' 
-                                          ? Theme.of(context).colorScheme.primaryContainer
-                                          : Theme.of(context).colorScheme.surfaceVariant,
+                                      color: Theme.of(context).colorScheme.surfaceVariant,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      member.role ?? 'member',
+                                      'member',
                                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: member.role == 'admin'
-                                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -314,9 +386,25 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
                             )).toList(),
                             const Spacer(),
                             ElevatedButton.icon(
+                              onPressed: _showHouseholdSettingsDialog,
+                              icon: const Icon(Icons.settings),
+                              label: const Text('Settings'),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
                               onPressed: _showSendInviteDialog,
                               icon: const Icon(Icons.person_add),
                               label: const Text('Invite Member'),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _showLeaveConfirmationDialog,
+                              icon: const Icon(Icons.exit_to_app),
+                              label: const Text('Leave Household'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             ElevatedButton.icon(
