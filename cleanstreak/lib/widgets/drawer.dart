@@ -231,6 +231,7 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
               color: Theme.of(context).colorScheme.primaryContainer,
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   Icons.home_work,
@@ -238,11 +239,13 @@ class _HouseholdDrawerState extends State<HouseholdDrawer> {
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
                 const SizedBox(width: 16),
-                Text(
-                  'Household Management',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Household\nManagement',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],

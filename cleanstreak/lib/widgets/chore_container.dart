@@ -73,22 +73,6 @@ class _ChoreContainerState extends State<ChoreContainer> {
                     Expanded(
                       child: Row(
                         children: [
-                          // Simple icon indicator for household vs personal chores
-                          if (widget.chore.householdId != null) ...[
-                            Icon(
-                              Icons.home_work,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                          ] else ...[
-                            Icon(
-                              Icons.person,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
                           Expanded(
                             child: Text(
                               widget.chore.name,
@@ -103,6 +87,20 @@ class _ChoreContainerState extends State<ChoreContainer> {
                               ),
                             ),
                           ),
+                          // Simple icon indicator for household vs personal chores (right-aligned)
+                          if (widget.chore.householdId != null) ...[
+                            Icon(
+                              Icons.home_work,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ] else ...[
+                            Icon(
+                              Icons.person,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ],
                         ],
                       ),
                     ),
